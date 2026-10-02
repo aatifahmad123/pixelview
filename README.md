@@ -1,6 +1,6 @@
 <div align="center">
 
-![PixelView logo](./public/logo.png)
+<img src="./public/logo.png" alt="PixelView logo" width="72" />
 
 # PixelView
 
@@ -10,9 +10,9 @@ Hover over any pixel to read its exact color, click to lock it in place, and cop
 
 ### Try it live
 
-**[pixelview.vercel.app](https://pixelview.vercel.app)**
+**[pixelview-six.vercel.app](https://pixelview-six.vercel.app/)**
 
-![PixelView demo](./public/sample-image.png)
+![PixelView demo](./public/demo-image.png)
 
 </div>
 
