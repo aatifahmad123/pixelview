@@ -1,0 +1,118 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink: #604e8b;
+  --color-paper: #f6f3fe;
+  --color-accent: #fc6d25;
+  --color-gold: #fba326;
+
+  --font-sans:
+    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-mono:
+    'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', Consolas,
+    monospace;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: #fbfaf7;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* Transparency checkerboard built from the palette only. */
+  .checkerboard {
+    background-image:
+      linear-gradient(45deg, rgb(96 78 139 / 0.14) 25%, transparent 25%),
+      linear-gradient(-45deg, rgb(96 78 139 / 0.14) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgb(96 78 139 / 0.14) 75%),
+      linear-gradient(-45deg, transparent 75%, rgb(96 78 139 / 0.14) 75%);
+    background-size: 12px 12px;
+    background-position:
+      0 0,
+      0 6px,
+      6px -6px,
+      -6px 0;
+  }
+
+  .animate-fade-in {
+    animation: pv-fade-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-rise {
+    animation: pv-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-pop {
+    animation: pv-pop 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes pv-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pv-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pv-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  60% {
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-rise,
+  .animate-pop {
+    animation: none;
+  }
+}
