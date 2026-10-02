@@ -19,6 +19,10 @@
     color-scheme: light;
   }
 
+  html {
+    font-size: 80%;
+  }
+
   html,
   body,
   #root {
