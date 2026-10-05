@@ -34,11 +34,17 @@ function CanvasStage({ image, locked, onHover, onLock }: CanvasStageProps) {
   const rafRef = useRef<number | null>(null)
   const lastSampleRef = useRef<PixelSample | null>(null)
   const lastHoverPixelRef = useRef<Point | null>(null)
+  const touchPlaceRef = useRef<{ point: Point; sample: PixelSample } | null>(null)
+  const downPointRef = useRef<Point | null>(null)
+  const isTouchRef = useRef(false)
 
   const [size, setSize] = useState({ width: 0, height: 0 })
 
   useEffect(() => {
     imageRef.current = image
+    touchPlaceRef.current = null
+    downPointRef.current = null
+    magnifierRef.current?.setVisible(false)
   }, [image])
   useEffect(() => {
     lockedRef.current = locked
@@ -192,6 +198,8 @@ function CanvasStage({ image, locked, onHover, onLock }: CanvasStageProps) {
     if (locked) {
       renderOverlay(null, locked)
     } else {
+      touchPlaceRef.current = null
+      magnifierRef.current?.setVisible(false)
       renderOverlay(null, null)
     }
   }, [locked, renderOverlay])
@@ -203,25 +211,74 @@ function CanvasStage({ image, locked, onHover, onLock }: CanvasStageProps) {
     [],
   )
 
-  const handlePointerMove = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
+  const pointFromEvent = useCallback(
+    (event: { clientX: number; clientY: number }): Point | null => {
       const el = containerRef.current
-      if (!el) return
+      if (!el) return null
       const rect = el.getBoundingClientRect()
-      pendingRef.current = { x: event.clientX - rect.left, y: event.clientY - rect.top }
-      if (rafRef.current == null) rafRef.current = requestAnimationFrame(tick)
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top }
     },
-    [tick],
+    [],
   )
 
-  const handlePointerLeave = useCallback(() => {
-    pendingRef.current = null
-    if (rafRef.current != null) {
-      cancelAnimationFrame(rafRef.current)
-      rafRef.current = null
-    }
-    magnifierRef.current?.setVisible(false)
-    lastHoverPixelRef.current = null
+  const sampleAtPoint = useCallback((point: Point): PixelSample | null => {
+    const img = imageRef.current
+    if (!img) return null
+    const source = mapPointToSource(point.x, point.y, fitRef.current)
+    if (!source) return null
+    const color = readPixel(img.buffer, img.width, img.height, source.x, source.y)
+    if (!color) return null
+    return { x: source.x, y: source.y, color }
+  }, [])
+
+  const scheduleTick = useCallback(() => {
+    if (rafRef.current == null) rafRef.current = requestAnimationFrame(tick)
+  }, [tick])
+
+  const handlePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const point = pointFromEvent(event)
+      if (!point) return
+      isTouchRef.current = event.pointerType === 'touch'
+      downPointRef.current = point
+      pendingRef.current = point
+      scheduleTick()
+      if (isTouchRef.current) magnifierRef.current?.setVisible(true)
+    },
+    [pointFromEvent, scheduleTick],
+  )
+
+  const handlePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const point = pointFromEvent(event)
+      if (!point) return
+      const down = downPointRef.current
+      if (down && touchPlaceRef.current && Math.hypot(point.x - down.x, point.y - down.y) > 5) {
+        touchPlaceRef.current = null
+      }
+      pendingRef.current = point
+      scheduleTick()
+    },
+    [pointFromEvent, scheduleTick],
+  )
+
+  const handlePointerLeave = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      pendingRef.current = null
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+      if (event.pointerType === 'touch') {
+        const placed = touchPlaceRef.current
+        if (placed) {
+          magnifierRef.current?.move(placed.point.x, placed.point.y, sizeRef.current)
+          renderOverlay(placed.point, placed.sample)
+        }
+        return
+      }
+      magnifierRef.current?.setVisible(false)
+      lastHoverPixelRef.current = null
     if (lockedRef.current) {
       renderOverlay(null, lockedRef.current)
     } else {
@@ -231,18 +288,43 @@ function CanvasStage({ image, locked, onHover, onLock }: CanvasStageProps) {
     }
   }, [renderOverlay])
 
-  const handleClick = useCallback(() => {
-    const sample = lastSampleRef.current
-    if (sample) lockRef.current(sample)
-  }, [])
+  const handleClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      const point = pointFromEvent(event)
+      if (!point) return
+      const sample = sampleAtPoint(point)
+      if (!sample) {
+        touchPlaceRef.current = null
+        return
+      }
+      if (isTouchRef.current) {
+        const placed = touchPlaceRef.current
+        if (placed && placed.sample.x === sample.x && placed.sample.y === sample.y) {
+          touchPlaceRef.current = null
+          lockRef.current(sample)
+        } else {
+          touchPlaceRef.current = { point, sample }
+          lastSampleRef.current = sample
+          if (!lockedRef.current) hoverRef.current(sample)
+        }
+        magnifierRef.current?.setVisible(true)
+        magnifierRef.current?.move(point.x, point.y, sizeRef.current)
+      } else {
+        lockRef.current(sample)
+      }
+      renderOverlay(point, sample)
+    },
+    [pointFromEvent, sampleAtPoint, renderOverlay],
+  )
 
   return (
     <div
       ref={containerRef}
+      onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
       onClick={handleClick}
-      className="checkerboard relative h-full w-full cursor-crosshair overflow-hidden rounded-none border border-ink/10"
+      className="checkerboard relative h-full w-full cursor-crosshair touch-none overflow-hidden rounded-none border border-ink/10"
     >
       <canvas ref={baseRef} className="absolute inset-0 h-full w-full" />
       <canvas
