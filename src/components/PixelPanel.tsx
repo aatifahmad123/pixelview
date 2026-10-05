@@ -10,15 +10,16 @@ import {
 } from '../utils/color'
 import Swatch from './Swatch'
 import ValueRow from './ValueRow'
-import { CrosshairIcon } from './icons'
+import { CrosshairIcon, LockIcon } from './icons'
 
 interface PixelPanelProps {
   sample: PixelSample | null
   locked: boolean
+  onLock: (sample: PixelSample) => void
   onClearLock: () => void
 }
 
-function PixelPanel({ sample, locked, onClearLock }: PixelPanelProps) {
+function PixelPanel({ sample, locked, onLock, onClearLock }: PixelPanelProps) {
   return (
     <section className="flex h-full flex-col gap-4 rounded-none border border-ink/10 bg-white/35 p-5">
       <header className="flex items-center justify-between gap-3">
@@ -33,9 +34,18 @@ function PixelPanel({ sample, locked, onClearLock }: PixelPanelProps) {
           >
             Locked
           </button>
+        ) : sample ? (
+          <button
+            type="button"
+            onClick={() => onLock(sample)}
+            className="inline-flex items-center gap-1.5 rounded-none bg-accent/10 px-3.5 py-1.5 text-sm font-semibold text-accent transition-transform hover:scale-[1.03] active:scale-95"
+          >
+            <LockIcon className="h-3.5 w-3.5" />
+            Lock
+          </button>
         ) : (
           <span className="rounded-none border border-ink/15 px-3.5 py-1.5 text-sm font-medium text-ink/50">
-            {sample ? 'Hovering' : 'Idle'}
+            Idle
           </span>
         )}
       </header>
@@ -90,8 +100,8 @@ function PixelPanel({ sample, locked, onClearLock }: PixelPanelProps) {
             <CrosshairIcon className="h-6 w-6" />
           </span>
           <p className="text-base font-medium text-ink sm:text-lg">Hover over the image</p>
-          <p className="max-w-[30ch] text-sm leading-relaxed text-ink/50">
-            Move your cursor to inspect pixel values, then click to lock a pixel in place.
+          <p className="max-w-[32ch] text-sm leading-relaxed text-ink/50">
+            Hover — or tap a pixel — to inspect values, then click / tap the same spot to lock it.
           </p>
         </div>
       )}

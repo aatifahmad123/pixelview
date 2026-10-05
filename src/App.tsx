@@ -134,7 +134,7 @@ export default function App() {
               Find the <span className="text-accent">exact color</span> hiding in any image
             </h1>
             <p className="max-w-4xl text-base leading-relaxed text-pretty text-ink/70 sm:text-lg">
-              Upload, hover and click, PixelView gives you precise color values in different
+              Upload, hover or tap, and lock a pixel to get precise color values in different
               color formats.
             </p>
           </div>
@@ -232,6 +232,7 @@ export default function App() {
             <PixelPanel
               sample={sample}
               locked={locked !== null}
+              onLock={handleLock}
               onClearLock={handleClearLock}
             />
           </div>
